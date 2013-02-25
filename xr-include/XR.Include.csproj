@@ -36,6 +36,12 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Processor.cs" />
+    <Compile Include="directives\DirectiveBase.cs" />
+    <Compile Include="directives\IncludeForeach.cs" />
+    <Compile Include="directives\IncludeFile.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <Folder Include="directives\" />
+  </ItemGroup>
 </Project>

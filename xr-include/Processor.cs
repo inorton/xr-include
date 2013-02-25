@@ -28,7 +28,7 @@ namespace XR.Include
 
 		public string RootDirectory { get; set; }
 
-		public string Transform( string path, params object[] args ){
+		public string Transform( string path, object context ){
 			throw new NotImplementedException();
 		}
 	}
