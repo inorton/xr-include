@@ -7,7 +7,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{4EEE3FD0-1850-4D3D-88A0-FA7982A6DDA3}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>Xr.Include</RootNamespace>
+    <RootNamespace>XR.Include</RootNamespace>
     <AssemblyName>xr-include</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
@@ -32,14 +32,16 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Processor.cs" />
     <Compile Include="directives\DirectiveBase.cs" />
-    <Compile Include="directives\IncludeForeach.cs" />
     <Compile Include="directives\IncludeFile.cs" />
     <Compile Include="FileContent.cs" />
+    <Compile Include="directives\PropertyString.cs" />
+    <Compile Include="BaseContext.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

@@ -1,18 +1,20 @@
 using System;
-using System.IO;
+using System.Diagnostics;
 
 namespace XR.Include
 {
 	public class IncludeFile : DirectiveBase
 	{
+		public const int MaxRecursion = 8;
+
 		public string Src { get; set; }
 
-		public IncludeFile ()
+		public override string Transform (int depth)
 		{
-		}
+			if (depth > MaxRecursion) {
+				return "[error: too many levels of recursion]";
+			}
 
-		public override string Transform ()
-		{
 			var sb = new System.Text.StringBuilder();
 			var tokens = Processor.Process (Src);
 			foreach (var t in tokens) {

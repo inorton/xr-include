@@ -8,7 +8,7 @@ namespace XR.Include
 		public Processor Processor { get; set; }
 
 
-		public virtual string Transform() {
+		public virtual string Transform( int depth ) {
 			return string.Empty;
 		}
 	}
