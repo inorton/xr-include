@@ -1,16 +1,19 @@
 using System;
+using System.IO;
+using System.Text;
 using NUnit.Framework;
 using XR.Include;
 
 namespace XR.Include.Tests
 {
 	public class UserObject {
-		public string Name { get; set; }
-		public AnotherObject Child { get; set; }
+		public string First { get; set; }
+		public AnotherObject Second { get; set; }
+		public string OtherTemplate { get { return "/include1.html"; } }
 	}
 
 	public class AnotherObject {
-		public string Name { get; set; }
+		public string First { get; set; }
 	}
 
 	[TestFixture()]
@@ -24,7 +27,7 @@ namespace XR.Include.Tests
 			var proc = new Processor();
 			proc.RootDirectory = Environment.CurrentDirectory;
 
-			Console.WriteLine( proc.Transform( "/testgoodone.html" ) );
+			proc.Transform( "/testgoodone.html", Console.Out );
 		}
 
 		[Test()]
@@ -33,16 +36,17 @@ namespace XR.Include.Tests
 			var proc = new Processor();
 			proc.RootDirectory = Environment.CurrentDirectory;
 			
-			Console.WriteLine( proc.Transform( "/testrecurse.html" ) );
+			proc.Transform( "/testrecurse.html", Console.Out );
 		}
 
 		[Test()]
+		[ExpectedException(typeof(FormatException))]
 		public void IncludeRecurseOveflow ()
 		{
 			var proc = new Processor();
 			proc.RootDirectory = Environment.CurrentDirectory;
 			
-			Console.WriteLine( proc.Transform( "/testoverflow.html" ) );
+			proc.Transform( "/testoverflow.html", Console.Out  );
 		}
 
 		[Test()]
@@ -51,17 +55,16 @@ namespace XR.Include.Tests
 			var proc = new Processor();
 			var parent = new UserObject()
 			{ 
-				Name = "the parent >> escaped",
-				Child = new AnotherObject() { Name = "<b>the child</b> literal" },
+				First = "(First)",
+				Second = new AnotherObject() { First = "(Child First)" },
 			};
 
 			proc.Context = parent;
 
 			proc.RootDirectory = Environment.CurrentDirectory;
 
-			Console.WriteLine( proc.Transform( "/testproperties.html" ) );
+			proc.Transform( "/testproperties.html", Console.Out );
 
 		}
 	}
 }
-

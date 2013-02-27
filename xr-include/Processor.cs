@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
 
@@ -32,26 +33,36 @@ namespace XR.Include
 
 		public string RootDirectory { get; set; }
 
+		// match : <% DIRECTIVE %>
 		Regex matchAllDirectives = new Regex (@"<%\s{0,}([^%]+)\s{0,}%>");
 
-		Regex matchContextProperty = new Regex (@"(\${1,2}[\w\.\d\_]+)");
+		// match : $PROPERTY or $:PROPERTY
+		Regex matchContextProperty = new Regex (@"(\${1}:{0,1}[\w\.\d\_]+)");
 
+		// match : xr-TYPE PARAM="VALUE"
 		Regex matchDirective = new Regex (@"xr-([a-z]+)\s+([a-z]+)=""([^""]+?)""");
 
 
-		public FileContent DirectiveFromMatch (int offset, GroupCollection groups)
+
+		public FileContent PropertyFromMatch( string vpath, GroupCollection groups)
 		{
 			if (groups.Count == 2) {
 				// might this be a property getter?
 				if ( groups[0].Value.StartsWith("$") ){
 					return new FileContent() {
 						Directive = new PropertyString() {
-							Property = groups[1].Value.Substring(1)
+							Context = Context,
+							FileName = vpath,
+							Property = groups[0].Value.Substring(1),
 						}
 					};
 				}
 			}
+			return null;
+		}
 
+		public FileContent DirectiveFromMatch (int offset, GroupCollection groups)
+		{
 			if (groups.Count < 3) {
 				return new FileContent () { 
 					Chunk = string.Format( "invalid directive at offset {0}", offset )
@@ -76,6 +87,7 @@ namespace XR.Include
 				return new FileContent () {
 					Directive = new IncludeFile() { 
 						Processor = this, 
+						Context = Context,
 						Src = groups[3].Value
 					}
 				};
@@ -89,82 +101,124 @@ namespace XR.Include
 
 		}
 
-		public string Transform (string vpath)
+		public void Transform (string vpath, TextWriter outputStream )
 		{
-			var cont = Process (vpath);
-			var sb = new System.Text.StringBuilder ();
-			foreach (var c in cont)
-				sb.Append (c.Chunk);
-			return sb.ToString ();
+			Process (vpath, outputStream);
+		}
+
+		string ProcessLineProperties (string vpath, string line, int linenum)
+		{
+			var sb = new StringBuilder( line.Length );
+			var offset = 0;
+			do {
+				var props = matchContextProperty.Match( line, offset );
+				if ( props.Success ) {
+					if ( props.Index > 0 ) {
+						// text before the match
+						var before = line.Substring( offset, props.Index - offset );
+						sb.Append(before);
+					}
+					offset = props.Index;
+
+					// got a match
+					var fc = PropertyFromMatch( vpath, props.Groups );
+					if ( fc != null && fc.Directive != null ) {
+						using ( var sw = new StringWriter() ) {
+							fc.Directive.Transform( 0, linenum, sw );
+							sb.Append( sw.ToString() );
+						}
+					} else {
+						throw new FormatException("property matched but no directive created!");
+					}
+					offset += props.Length;
+				} else {
+					sb.Append( line.Substring( offset ) ); // no more
+					break;
+				}
+
+			} while ( offset < line.Length );
+
+			return sb.ToString();
 		}
 
 		int processDepth = 0;
 
-		public List<FileContent> Process (string vpath)
+		public void Process (string vpath, TextWriter outputStream)
 		{
 			try {
 				lock (matchDirective) {
 					processDepth++;
 				}
 			
-				var rv = new List<FileContent> ();
-				var txt = File.ReadAllText (VirtualToLocalPath (vpath));
-				int offset = 0;
+				// read each line, first parse it for $Property expressions,
+				// then parse the result for directives
+
+				var fh = File.OpenRead( VirtualToLocalPath (vpath) );
+				var linenum = 0;
+				var sr = new StreamReader( fh );
+				var line = string.Empty;
 				do {
-					var start = 0;
-					var len = 0;
-					FileContent fc = null;
-					Match m = null;
-					var any = matchAllDirectives.Match( txt, offset );
-					if (any.Success) {
-						start = any.Index;
-						len = any.Length;
+					line = sr.ReadLine();
+					linenum++;
+					if ( line == null ) break;
+					line += Environment.NewLine;
 
-						if (start > offset) {
-							var before = new FileContent () { Chunk = txt.Substring( offset, start - offset ) };
-							rv.Add (before);
-						}
+					// do properties here
+					line = ProcessLineProperties( vpath, line, linenum );
+
+					int offset = 0;
+					do {
+						var start = 0;
+						var len = 0;
+						FileContent fc = null;
+						Match m = null;
+
+						// do directives
+						var dirs = matchAllDirectives.Match( line, offset );
+						if (dirs.Success) {
+							start = dirs.Index;
+							len = dirs.Length;
+
+							if (start > offset) {
+								outputStream.Write( line.Substring( offset, start - offset ) );
+							}
 					
-						m = matchDirective.Match (any.Groups[0].Value, 0);
-						if (!m.Success) {
-							m = matchContextProperty.Match( any.Groups[0].Value, 0 );
-						}
+							m = matchDirective.Match (dirs.Groups[0].Value, 0);
+							if (!m.Success) {
+								m = matchContextProperty.Match( dirs.Groups[0].Value, 0 );
+							}
 
-						if ( m != null && m.Success ){
-							// we have a match, process it into a directive
-							fc = DirectiveFromMatch (offset, m.Groups);
-						}
-					}
-
-					if ( !any.Success ) { 
-						// no more matches in txt
-						var after = new FileContent () { Chunk = txt.Substring( offset ) };
-						rv.Add (after);
-						break;
-					}
-
-
-					if (fc != null) {
-						if (fc.Chunk != null) {
-							rv.Add (fc);
-						} else {
-							if (fc.Directive != null) {
-								fc.Directive.Context = Context;
-								// we have a directive, do it
-								var tfm = fc.Directive.Transform (processDepth) ?? "";
-								var c = new FileContent () { Chunk = tfm };
-								rv.Add (c);
+							if ( m != null && m.Success ){
+								// we have a match, process it into a directive
+								fc = DirectiveFromMatch (offset, m.Groups);
 							}
 						}
-					}
 
-					// do we have enough groups?
+						if ( !dirs.Success ) { 
+							// no more matches in line
+							outputStream.Write( line.Substring( offset ) );
+							break;
+						}
 
-					offset = any.Index + len;
+						if (fc != null) {
+							if (fc.Chunk != null) {
+								outputStream.Write( fc.Chunk );
+							} else {
+								if (fc.Directive != null) {
+									// we have a directive, do it
+									fc.Directive.Transform (processDepth, linenum, outputStream);
+								}
+							}
+						}
 
-				} while ( offset < txt.Length );
+						// do we have enough groups?
 
-				return rv;
+						offset = dirs.Index + len;
+	
+					} while ( offset < line.Length );
+
+				} while ( true );
+
 			} finally {
 				lock (matchDirective) {
 					processDepth--;

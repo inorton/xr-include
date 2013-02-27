@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Diagnostics;
 
 namespace XR.Include
@@ -9,18 +10,13 @@ namespace XR.Include
 
 		public string Src { get; set; }
 
-		public override string Transform (int depth)
+		public override void Transform (int depth, int line, TextWriter outputStream)
 		{
 			if (depth > MaxRecursion) {
-				return "[error: too many levels of recursion]";
+				throw new FormatException( String.Format( "too many levels of recursion at {0}:{1}", Src, line ) );
 			}
+			Processor.Process (Src, outputStream);
 
-			var sb = new System.Text.StringBuilder();
-			var tokens = Processor.Process (Src);
-			foreach (var t in tokens) {
-				sb.Append( t.Chunk );
-			}
-			return sb.ToString();
 		}
 	}
 }

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace XR.Include
 {
@@ -8,8 +9,8 @@ namespace XR.Include
 		public Processor Processor { get; set; }
 
 
-		public virtual string Transform( int depth ) {
-			return string.Empty;
+		public virtual void Transform( int depth, int line, TextWriter outputStream ) {
+
 		}
 	}
 }
