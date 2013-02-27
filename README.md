@@ -3,14 +3,19 @@ xr-include
 
 An experimental text file pre-processor. 
 
-Think of this as a slightly easier to type way of doing 
-SSI (Server Side Includes) and very simple variable expansion.
+Think of this as a slightly easier to type way of doing SSI (Server Side
+Includes) and very simple variable expansion.
 
-My main want for this was to construct a series of simple web pages that all contained the 
-same CSS and Javascripts, yet had some things (like headings and titles) that would differ. 
+My main want for this was to construct a series of simple web pages that all
+contained the same CSS and Javascripts, yet had some things (like headings and
+titles) that would differ. 
 
-I wanted to do the rest of the interface construction in Javascript and use RPC after, so 
-this should at least get you the simple server-side half.
+I wanted to do the rest of the interface construction in Javascript and use RPC
+after, so this should at least get you the simple server-side half.
+
+Why would you want such a thing? Why not just use T4 templates? or Genshi? 
+Well, if you have those at your disposal then they are proabably the right
+thing. Use this if you don't have anything better :)
 
 Example
 ========
