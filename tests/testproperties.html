@@ -1,6 +1,10 @@
 BEFORE:a$First,b$First,c$First,--END
 before:$Second.First:after
 
+This is a $$verbatim string, it should get ignored, the first $ should get removed
+
+$$ strings are especially useful if you want to do things with jquery like $$.contains()
+
 <!-- before OtherTemplate -->
 BEFORE:<% xr-include src="$OtherTemplate" %>:AFTER
 <!-- after OtherTemplate -->

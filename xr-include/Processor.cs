@@ -37,7 +37,7 @@ namespace XR.Include
 		Regex matchAllDirectives = new Regex (@"<%\s{0,}([^%]+)\s{0,}%>");
 
 		// match : $PROPERTY or $:PROPERTY
-		Regex matchContextProperty = new Regex (@"(\${1}:{0,1}[\w\.\d\_]+)");
+		Regex matchContextProperty = new Regex (@"(\$+:{0,1}[\w\.\d\_]+)");
 
 		// match : xr-TYPE PARAM="VALUE"
 		Regex matchDirective = new Regex (@"xr-([a-z]+)\s+([a-z]+)=""([^""]+?)""");
@@ -48,14 +48,24 @@ namespace XR.Include
 		{
 			if (groups.Count == 2) {
 				// might this be a property getter?
-				if ( groups[0].Value.StartsWith("$") ){
-					return new FileContent() {
-						Directive = new PropertyString() {
-							Context = Context,
-							FileName = vpath,
-							Property = groups[0].Value.Substring(1),
+				var grp0 = groups[0].Value;
+				if ( grp0.StartsWith("$") ){
+					var propstr = grp0.Substring(1);
+					if ( grp0.StartsWith("$$") ){
+						return new FileContent() {
+							Chunk = grp0.Substring(1)
+						};
+					} else {
+						if ( !Regex.IsMatch( propstr, "^\\.|^:\\." ) ){
+							return new FileContent() {
+								Directive = new PropertyString() {
+									Context = Context,
+									FileName = vpath,
+									Property = propstr,
+								}
+							};
 						}
-					};
+					}
 				}
 			}
 			return null;
@@ -122,9 +132,15 @@ namespace XR.Include
 
 					// got a match
 					var fc = PropertyFromMatch( vpath, props.Groups );
-					if ( fc != null && fc.Directive != null ) {
+					if ( fc != null ) {
+
 						using ( var sw = new StringWriter() ) {
-							fc.Directive.Transform( 0, linenum, sw );
+							if ( fc.Directive != null ) {
+								fc.Directive.Transform( 0, linenum, sw );
+							}
+							if ( fc.Chunk != null ) {
+								sw.Write( fc.Chunk );
+							}
 							sb.Append( sw.ToString() );
 						}
 					} else {
