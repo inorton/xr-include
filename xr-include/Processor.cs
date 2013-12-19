@@ -37,7 +37,7 @@ namespace XR.Include
 		Regex matchAllDirectives = new Regex (@"<%\s{0,}([^%]+)\s{0,}%>");
 
 		// match : $PROPERTY or $:PROPERTY
-		Regex matchContextProperty = new Regex (@"(\$+:{0,1}[\w\.\d\_]+)");
+		Regex matchContextProperty = new Regex (@"(\$+:{0,1}[\w\.\d_]+)");
 
 		// match : xr-TYPE PARAM="VALUE"
 		Regex matchDirective = new Regex (@"xr-([a-z]+)\s+([a-z]+)=""([^""]+?)""");
