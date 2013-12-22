@@ -11,15 +11,14 @@ namespace XR.Include
 	{
 		public string VirtualToLocalPath (string vpath)
 		{
-			if (string.IsNullOrEmpty (vpath))
+			if (string.IsNullOrEmpty (vpath) || vpath.Length < 2)
 				return RootDirectory;
 
 			var comps = vpath.Split (new char[]{ Processor.VirtualPathSeparator });
+            var tmp = from x in comps where !string.IsNullOrEmpty(x) select x;
+            var local = string.Join(Path.DirectorySeparatorChar.ToString(), tmp.ToArray());
 
-			var local = string.Join (VirtualPathSeparator.ToString (), comps);
-			local = RootDirectory + VirtualPathSeparator.ToString () + local;
-
-			return local;
+            return Path.Combine(RootDirectory, local);
 		}
 
 		public Processor ()
