@@ -41,8 +41,8 @@ namespace XR.Include
 					}
 
 					var rv = string.Format ("{0}", obj);
-					if (escapeHTML)
-						rv = System.Web.HttpUtility.HtmlEncode (rv);
+                    if (escapeHTML)
+                        rv = BaseContext.HtmlEscape(rv);
 
 					outputStream.Write (rv);
 				}

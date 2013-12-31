@@ -29,10 +29,15 @@ namespace XR.Include
                         var res = m.Invoke(Context, args);
                         if (res != null)
                         {
-                            return new FileContent() {
+                            return new FileContent()
+                            {
                                 Chunk = res.ToString()
                             };
                         }
+                    }
+                    else
+                    {
+                        throw new MissingMethodException(ctype.Name.ToString(), methodname);
                     }
                 }
             }
