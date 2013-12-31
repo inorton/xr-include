@@ -39,13 +39,12 @@ namespace XR.Include
 		Regex matchContextProperty = new Regex (@"(\$+:{0,1}[\w\.\d_]+)");
 
 		// match : xr-TYPE PARAM="VALUE"
-		Regex matchDirective = new Regex (@"xr-([a-z]+)\s+([a-z]+)=""([^""]+?)""");
-
-
+		Regex matchDirective = new Regex (@"xr-([a-zA-Z]+)\s+([a-z]+)=""([^""]+?)""");
 
 		public FileContent PropertyFromMatch( string vpath, GroupCollection groups)
 		{
-			if (groups.Count == 2) {
+			if (groups.Count == 2)
+            {
 				// might this be a property getter?
 				var grp0 = groups[0].Value;
 				if ( grp0.StartsWith("$") ){
@@ -70,7 +69,42 @@ namespace XR.Include
 			return null;
 		}
 
-		public FileContent DirectiveFromMatch (int offset, GroupCollection groups)
+        public virtual FileContent RunDirectives(int offset, string type, GroupCollection groups)
+        {
+            type = type.ToLower();
+            switch (type)
+            {
+                case "include":
+                    if (groups.Count != 4)
+                    {
+                        return new FileContent()
+                        {
+                            Chunk = String.Format("too few parameters for directive '{0}' at offset {1}", type, offset)
+                        };
+                    }
+                    if (groups[2].Value != "src")
+                    {
+                        return new FileContent()
+                        {
+                            Chunk = String.Format("expected src in directive '{0}' at offset {1}, got '{2}'", type, offset, groups[2].Value)
+                        };
+                    }
+                    return new FileContent()
+                    {
+                        Directive = new IncludeFile()
+                        {
+                            Processor = this,
+                            Context = Context,
+                            Src = groups[3].Value
+                        }
+                    };
+
+                default:
+                    return null;
+            }
+        }
+
+		public virtual FileContent DirectiveFromMatch (int offset, GroupCollection groups)
 		{
 			if (groups.Count < 3) {
 				return new FileContent () { 
@@ -79,35 +113,21 @@ namespace XR.Include
 			}
 
 			// might it be an include or other directive?
-			var type = groups [1].Value.ToLower ();
+			var type = groups [1].Value;
 
-			switch (type) {
-			case "include":
-				if (groups.Count != 4) {
-					return new FileContent () {
-						Chunk = String.Format("too few parameters for directive '{0}' at offset {1}", type, offset )
-					};
-				}
-				if (groups [2].Value != "src") {
-					return new FileContent () {
-						Chunk = String.Format("expected src in directive '{0}' at offset {1}, got '{2}'", type, offset, groups[2].Value )
-					};
-				}
-				return new FileContent () {
-					Directive = new IncludeFile() { 
-						Processor = this, 
-						Context = Context,
-						Src = groups[3].Value
-					}
-				};
+            var content = RunDirectives(offset, type, groups);
 
-
-			default:
-				return new FileContent () { 
-					Chunk = String.Format("unknown directive type '{0}' at offset {1}", type, offset ) 
-				};
-			}
-
+            if (content == null)
+            {
+                return new FileContent()
+                {
+                    Chunk = String.Format("unknown directive type '{0}' at offset {1}", type, offset)
+                };
+            }
+            else
+            {
+                return content;
+            }
 		}
 
 		public void Transform (string vpath, TextWriter outputStream )
